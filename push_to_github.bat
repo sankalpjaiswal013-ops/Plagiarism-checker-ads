@@ -16,8 +16,8 @@ git branch -M main
 echo Adding remote origin...
 git remote add origin https://github.com/sankalpjaiswal013-ops/Plagiarism-checker-ads.git
 
-echo Pushing to GitHub...
-git push -u origin main
+echo Pushing to GitHub (forcing overwrite of remote)...
+git push -u origin main -f
 
 echo.
 echo Finished! Check the messages above for any errors.
