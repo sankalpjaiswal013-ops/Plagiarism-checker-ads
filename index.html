@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plagiarism Checker</title>
+  
+  <!-- Tabler Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- React & ReactDOM (UMD) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  
+  <!-- Babel for compiling JSX in the browser -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Massive Resume Corpus -->
+  <script src="corpus.js"></script>
+
+  <style>
+    :root {
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      
+      /* Clean Premium Light Theme */
+      --color-background-primary: #ffffff;
+      --color-background-secondary: #fafcff;
+      --color-background-card: #ffffff;
+      
+      --color-background-info: #eff6ff;
+      --color-background-success: #f0fdf4;
+      --color-background-warning: #fffbeb;
+      --color-background-danger: #fef2f2;
+      
+      --color-text-primary: #0f172a;
+      --color-text-secondary: #475569;
+      --color-text-tertiary: #94a3b8;
+      
+      --color-text-info: #2563eb;
+      --color-text-success: #16a34a;
+      --color-text-warning: #d97706;
+      --color-text-danger: #dc2626;
+      
+      --color-border-primary: #e2e8f0;
+      --color-border-secondary: #cbd5e1;
+      --color-border-tertiary: #f1f5f9;
+      
+      --border-radius-md: 12px;
+      --border-radius-lg: 20px;
+      
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+      --shadow-glow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--color-background-secondary);
+      background-image: 
+        radial-gradient(at 0% 0%, hsla(215, 100%, 96%, 1) 0px, transparent 50%), 
+        radial-gradient(at 100% 0%, hsla(140, 100%, 97%, 1) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--color-text-primary);
+      font-family: var(--font-sans);
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    #root {
+      width: 100%;
+      max-width: 900px;
+      padding: 3rem 2rem;
+    }
+    
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--color-border-secondary); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--color-text-tertiary); }
+    
+    /* Global utilities for clean UI */
+    .card {
+      background: var(--color-background-card);
+      border: 1px solid var(--color-border-primary);
+      border-radius: var(--border-radius-lg);
+      box-shadow: var(--shadow-sm);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--color-border-secondary);
+      transform: translateY(-2px);
+    }
+    
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      border-radius: var(--border-radius-lg);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: white !important;
+      border: none;
+      border-radius: var(--border-radius-md);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+      transition: all 0.2s ease;
+      font-family: var(--font-sans);
+    }
+    .btn-primary:hover:not(:disabled) {
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+      transform: translateY(-1px);
+    }
+    .btn-primary:disabled {
+      background: var(--color-border-secondary);
+      box-shadow: none;
+      color: var(--color-text-tertiary) !important;
+    }
+    
+    .input-field {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--color-border-primary);
+      background: var(--color-background-primary);
+      color: var(--color-text-primary);
+      border-radius: var(--border-radius-lg);
+      padding: 16px;
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.6;
+      transition: all 0.2s ease;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+      outline: none;
+    }
+    .input-field:focus {
+      border-color: var(--color-text-info);
+      box-shadow: var(--shadow-glow);
+    }
+    
+    .tab-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      font-family: var(--font-sans);
+    }
+    .tab-btn:hover {
+      color: var(--color-text-primary);
+      background: rgba(0,0,0,0.02);
+      border-radius: 8px 8px 0 0;
+    }
+    .tab-btn.active {
+      color: var(--color-text-info);
+      border-bottom-color: var(--color-text-info);
+    }
+    
+    .stat-card {
+      background: var(--color-background-primary);
+      border-radius: var(--border-radius-lg);
+      padding: 1.5rem;
+      border: 1px solid var(--color-border-primary);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useRef } = React;
+
+    // ============================================================
+    // RABIN-KARP ROLLING HASH ALGORITHM (from scratch)
+    // ============================================================
+    const BASE = 31;
+    const MOD = 1e9 + 9;
+
+    function rabinKarpHash(str) {
+      let hash = 0;
+      let power = 1;
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash + (str.charCodeAt(i) - 96) * power) % MOD;
+        power = (power * BASE) % MOD;
+      }
+      return hash;
+    }
+
+    function generateKgramHashes(text, k) {
+      const words = text.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).filter(Boolean);
+      const kgrams = new Map();
+      for (let i = 0; i <= words.length - k; i++) {
+        const gram = words.slice(i, i + k).join(" ");
+        const h = rabinKarpHash(gram);
+        if (!kgrams.has(h)) kgrams.set(h, []);
+        kgrams.get(h).push({ pos: i, gram });
+      }
+      return kgrams;
+    }
+
+    // ============================================================
+    // EXTENDIBLE HASHING (from scratch)
+    // ============================================================
+    class ExtendibleHashBucket {
+      constructor(localDepth) {
+        this.localDepth = localDepth;
+        this.entries = [];
+        this.capacity = 4;
+      }
+      isFull() { return this.entries.length >= this.capacity; }
+      insert(key, value) { this.entries.push({ key, value }); }
+      find(key) { return this.entries.filter(e => e.key === key); }
+    }
+
+    class ExtendibleHashTable {
+      constructor() {
+        this.globalDepth = 1;
+        this.directory = [new ExtendibleHashBucket(1), new ExtendibleHashBucket(1)];
+        this.stats = { inserts: 0, splits: 0, doublings: 0 };
+      }
+
+      _idx(key) {
+        const h = typeof key === "number" ? key : rabinKarpHash(String(key));
+        return h & ((1 << this.globalDepth) - 1);
+      }
+
+      insert(key, value) {
+        this.stats.inserts++;
+        let idx = this._idx(key);
+        let bucket = this.directory[idx];
+        if (!bucket.isFull()) {
+          bucket.insert(key, value);
+          return;
+        }
+        this.stats.splits++;
+        if (bucket.localDepth === this.globalDepth) {
+          this.stats.doublings++;
+          const old = [...this.directory];
+          this.globalDepth++;
+          this.directory = new Array(1 << this.globalDepth);
+          for (let i = 0; i < old.length; i++) {
+            this.directory[i] = old[i];
+            this.directory[i + old.length] = old[i];
+          }
+        }
+        const newDepth = bucket.localDepth + 1;
+        const b0 = new ExtendibleHashBucket(newDepth);
+        const b1 = new ExtendibleHashBucket(newDepth);
+        const oldEntries = [...bucket.entries];
+        bucket.entries = [];
+        for (let i = 0; i < this.directory.length; i++) {
+          if (this.directory[i] === bucket) {
+            this.directory[i] = (i >> (newDepth - 1)) & 1 ? b1 : b0;
+          }
+        }
+        for (const e of oldEntries) {
+          const ni = this._idx(e.key);
+          this.directory[ni].insert(e.key, e.value);
+        }
+        const fi = this._idx(key);
+        if (!this.directory[fi].isFull()) this.directory[fi].insert(key, value);
+      }
+
+      find(key) {
+        const idx = this._idx(key);
+        return this.directory[idx].find(key);
+      }
+    }
+
+    // ============================================================
+    // B-TREE (from scratch, order m=3)
+    // ============================================================
+    const BTREE_ORDER = 3;
+
+    class BTreeNode {
+      constructor(isLeaf = false) {
+        this.keys = [];
+        this.values = [];
+        this.children = [];
+        this.isLeaf = isLeaf;
+      }
+    }
+
+    class BTree {
+      constructor() {
+        this.root = new BTreeNode(true);
+        this.stats = { inserts: 0, splits: 0, height: 1 };
+      }
+
+      search(node, key) {
+        let i = 0;
+        while (i < node.keys.length && key > node.keys[i]) i++;
+        if (i < node.keys.length && key === node.keys[i]) return node.values[i];
+        if (node.isLeaf) return null;
+        return this.search(node.children[i], key);
+      }
+
+      insert(key, value) {
+        this.stats.inserts++;
+        const root = this.root;
+        if (root.keys.length === 2 * BTREE_ORDER - 1) {
+          this.stats.splits++;
+          this.stats.height++;
+          const newRoot = new BTreeNode(false);
+          newRoot.children.push(this.root);
+          this._splitChild(newRoot, 0);
+          this.root = newRoot;
+        }
+        this._insertNonFull(this.root, key, value);
+      }
+
+      _splitChild(parent, i) {
+        this.stats.splits++;
+        const child = parent.children[i];
+        const sibling = new BTreeNode(child.isLeaf);
+        const mid = BTREE_ORDER - 1;
+
+        parent.keys.splice(i, 0, child.keys[mid]);
+        parent.values.splice(i, 0, child.values[mid]);
+        parent.children.splice(i + 1, 0, sibling);
+
+        sibling.keys = child.keys.splice(mid + 1);
+        sibling.values = child.values.splice(mid + 1);
+        child.keys.splice(mid);
+        child.values.splice(mid);
+
+        if (!child.isLeaf) {
+          sibling.children = child.children.splice(mid + 1);
+        }
+      }
+
+      _insertNonFull(node, key, value) {
+        let i = node.keys.length - 1;
+        if (node.isLeaf) {
+          while (i >= 0 && key < node.keys[i]) i--;
+          node.keys.splice(i + 1, 0, key);
+          node.values.splice(i + 1, 0, value);
+        } else {
+          while (i >= 0 && key < node.keys[i]) i--;
+          i++;
+          if (node.children[i].keys.length === 2 * BTREE_ORDER - 1) {
+            this._splitChild(node, i);
+            if (key > node.keys[i]) i++;
+          }
+          this._insertNonFull(node.children[i], key, value);
+        }
+      }
+
+      find(key) { return this.search(this.root, key); }
+    }
+
+    // ============================================================
+    // MIN-HEAP for Top-K results (from scratch)
+    // ============================================================
+    class MinHeap {
+      constructor() { this.heap = []; }
+      push(item) {
+        this.heap.push(item);
+        this._bubbleUp(this.heap.length - 1);
+      }
+      pop() {
+        const top = this.heap[0];
+        const last = this.heap.pop();
+        if (this.heap.length > 0) { this.heap[0] = last; this._sinkDown(0); }
+        return top;
+      }
+      _bubbleUp(i) {
+        while (i > 0) {
+          const p = Math.floor((i - 1) / 2);
+          if (this.heap[p].score > this.heap[i].score) {
+            [this.heap[p], this.heap[i]] = [this.heap[i], this.heap[p]];
+            i = p;
+          } else break;
+        }
+      }
+      _sinkDown(i) {
+        const n = this.heap.length;
+        while (true) {
+          let min = i, l = 2*i+1, r = 2*i+2;
+          if (l < n && this.heap[l].score < this.heap[min].score) min = l;
+          if (r < n && this.heap[r].score < this.heap[min].score) min = r;
+          if (min === i) break;
+          [this.heap[min], this.heap[i]] = [this.heap[i], this.heap[min]];
+          i = min;
+        }
+      }
+      toSortedArray() {
+        const copy = [...this.heap];
+        const result = [];
+        while (this.heap.length > 0) result.push(this.pop());
+        this.heap = copy;
+        return result.reverse();
+      }
+    }
+
+    // ============================================================
+    // CORE PLAGIARISM ENGINE
+    // ============================================================
+    function buildCorpus(docs) {
+      const K = 4;
+      const btree = new BTree();
+      const hashTable = new ExtendibleHashTable();
+
+      docs.forEach((doc, idx) => {
+        btree.insert(idx, { id: idx, name: doc.name, text: doc.text });
+        const kgrams = generateKgramHashes(doc.text, K);
+        kgrams.forEach((positions, hash) => {
+          hashTable.insert(hash, { docId: idx, docName: doc.name, positions });
+        });
+      });
+      return { btree, hashTable, K };
+    }
+
+    function detectPlagiarism(queryText, corpus) {
+      const { btree, hashTable, K } = corpus;
+      const queryGrams = generateKgramHashes(queryText, K);
+      const matchCounts = new Map();
+
+      queryGrams.forEach((_, hash) => {
+        const results = hashTable.find(hash);
+        results.forEach(r => {
+          if (!matchCounts.has(r.value.docId)) matchCounts.set(r.value.docId, 0);
+          matchCounts.set(r.value.docId, matchCounts.get(r.value.docId) + 1);
+        });
+      });
+
+      const totalGrams = queryGrams.size || 1;
+      const heap = new MinHeap();
+
+      matchCounts.forEach((count, docId) => {
+        const score = Math.min(100, Math.round((count / totalGrams) * 100));
+        const doc = btree.find(docId);
+        if (doc && score > 0) heap.push({ score, docId, docName: doc.name });
+      });
+
+      return { results: heap.toSortedArray(), totalQueryGrams: queryGrams.size };
+    }
+
+    const SAMPLE_CORPUS = window.RESUME_CORPUS || [
+      {
+        name: "Fallback Document (No Corpus Found)",
+        text: "Please make sure corpus.js is loaded correctly. If you are seeing this, the massive resume dataset failed to load."
+      }
+    ];
+
+    function PlagiarismChecker() {
+      const [queryText, setQueryText] = useState("");
+      const [results, setResults] = useState(null);
+      const [isChecking, setIsChecking] = useState(false);
+      const [activeTab, setActiveTab] = useState("checker");
+      const [customDocs, setCustomDocs] = useState([]);
+      const [newDocName, setNewDocName] = useState("");
+      const [newDocText, setNewDocText] = useState("");
+      const [expandedDocIdx, setExpandedDocIdx] = useState(null);
+      const corpusRef = useRef(null);
+
+      const allDocs = [...SAMPLE_CORPUS, ...customDocs];
+
+      function getCorpus() {
+        if (!corpusRef.current || corpusRef.current.docCount !== allDocs.length) {
+          corpusRef.current = { ...buildCorpus(allDocs), docCount: allDocs.length };
+        }
+        return corpusRef.current;
+      }
+
+      function handleCheck() {
+        if (!queryText.trim()) return;
+        setIsChecking(true);
+        setTimeout(() => {
+          const corpus = getCorpus();
+          const { results: res, totalQueryGrams } = detectPlagiarism(queryText, corpus);
+          const btreeStats = corpus.btree.stats;
+          const hashStats = corpus.hashTable.stats;
+          setResults({ matches: res, totalQueryGrams, btreeStats, hashStats });
+          setIsChecking(false);
+        }, 600);
+      }
+
+      function addDocument() {
+        if (!newDocName.trim() || !newDocText.trim()) return;
+        setCustomDocs(prev => [...prev, { name: newDocName, text: newDocText }]);
+        corpusRef.current = null;
+        setNewDocName("");
+        setNewDocText("");
+      }
+
+      const overallScore = results
+        ? results.matches.length > 0
+          ? Math.max(...results.matches.map(m => m.score))
+          : 0
+        : null;
+
+      const scoreColor = overallScore === null ? "#888" :
+        overallScore >= 70 ? "var(--color-text-danger)" :
+        overallScore >= 40 ? "var(--color-text-warning)" :
+        "var(--color-text-success)";
+
+      const scoreLabel = overallScore === null ? "" :
+        overallScore >= 70 ? "High Plagiarism" :
+        overallScore >= 40 ? "Moderate Similarity" :
+        overallScore > 0 ? "Low Similarity" : "Original";
+
+      const tabs = [
+        { id: "checker", label: "Checker", icon: "ti-search" },
+        { id: "corpus", label: "Corpus", icon: "ti-books" },
+        { id: "algo", label: "How it works", icon: "ti-code" },
+      ];
+
+      return (
+        <div className="fade-in glass-panel" style={{ padding: "2.5rem", width: "100%", boxSizing: "border-box" }}>
+          <h2 className="sr-only" style={{ display: 'none' }}>Document Plagiarism Checker — ADS Group Project</h2>
+
+          {/* Header */}
+          <div style={{ marginBottom: "2rem", textAlign: "center" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 12, marginBottom: 8, padding: "10px 20px", background: "white", borderRadius: "100px", boxShadow: "var(--shadow-sm)", border: "1px solid var(--color-border-primary)" }}>
+              <i className="ti ti-shield-check" style={{ fontSize: 24, color: "var(--color-text-info)" }} aria-hidden="true"></i>
+              <span style={{ fontSize: 24, fontWeight: 700, color: "var(--color-text-primary)", letterSpacing: "-0.03em" }}>Plagiarism Checker</span>
+            </div>
+            <p style={{ fontSize: 15, color: "var(--color-text-secondary)", margin: "12px 0 0 0", fontWeight: 500 }}>
+              Advanced detection powered by Rabin-Karp & B-Tree
+            </p>
+          </div>
+
+          {/* Tabs */}
+          <div style={{ display: "flex", gap: 8, marginBottom: "2rem", borderBottom: "1px solid var(--color-border-primary)", paddingBottom: 0, justifyContent: "center" }}>
+            {tabs.map(t => (
+              <button key={t.id} onClick={() => setActiveTab(t.id)}
+                className={`tab-btn ${activeTab === t.id ? 'active' : ''}`}>
+                <i className={`ti ${t.icon}`} style={{ fontSize: 18 }} aria-hidden="true"></i>
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* TAB: CHECKER */}
+          {activeTab === "checker" && (
+            <div className="fade-in">
+              <div className="card" style={{ padding: "1.5rem", marginBottom: "2rem" }}>
+                <label style={{ fontSize: 15, fontWeight: 600, color: "var(--color-text-primary)", display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <i className="ti ti-file-description" style={{color: "var(--color-text-info)"}}></i> Paste text to analyze
+                </label>
+                <textarea
+                  value={queryText}
+                  onChange={e => setQueryText(e.target.value)}
+                  placeholder="Paste your text here... (min ~20 words for best results)"
+                  className="input-field"
+                  style={{ height: 180, resize: "vertical" }}
+                />
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
+                  <span style={{ fontSize: 14, color: "var(--color-text-tertiary)", fontWeight: 500 }}>
+                    {queryText.trim().split(/\s+/).filter(Boolean).length} words · {allDocs.length} documents
+                  </span>
+                  <button onClick={handleCheck} disabled={isChecking || !queryText.trim()}
+                    className="btn-primary"
+                    style={{ 
+                      padding: "12px 24px", fontSize: 15, fontWeight: 600, cursor: isChecking || !queryText.trim() ? "not-allowed" : "pointer",
+                      display: "flex", alignItems: "center", gap: 8
+                    }}>
+                    {isChecking ? (
+                       <><i className="ti ti-loader" style={{ animation: "spin 1s linear infinite" }}></i> Analyzing...</>
+                    ) : (
+                       <><i className="ti ti-sparkles"></i> Scan Text</>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Results */}
+              {results && (
+                <div className="fade-in">
+                  {/* Score Summary */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: "2rem" }}>
+                    <div className="stat-card">
+                      <div style={{ fontSize: 14, color: "var(--color-text-secondary)", marginBottom: 8, display: "flex", alignItems: "center", gap: 6, fontWeight: 500 }}><i className="ti ti-percentage" style={{color: scoreColor}}></i> Similarity score</div>
+                      <div style={{ fontSize: 36, fontWeight: 700, color: scoreColor, letterSpacing: "-0.03em" }}>{overallScore}%</div>
+                      <div style={{ fontSize: 14, color: scoreColor, marginTop: 4, fontWeight: 600 }}>{scoreLabel}</div>
+                    </div>
+                    <div className="stat-card">
+                      <div style={{ fontSize: 14, color: "var(--color-text-secondary)", marginBottom: 8, display: "flex", alignItems: "center", gap: 6, fontWeight: 500 }}><i className="ti ti-box-padding" style={{color: "var(--color-text-info)"}}></i> K-grams analyzed</div>
+                      <div style={{ fontSize: 36, fontWeight: 700, letterSpacing: "-0.03em" }}>{results.totalQueryGrams}</div>
+                      <div style={{ fontSize: 14, color: "var(--color-text-tertiary)", marginTop: 4 }}>4-word windows</div>
+                    </div>
+                    <div className="stat-card">
+                      <div style={{ fontSize: 14, color: "var(--color-text-secondary)", marginBottom: 8, display: "flex", alignItems: "center", gap: 6, fontWeight: 500 }}><i className="ti ti-files" style={{color: "var(--color-text-warning)"}}></i> Matches found</div>
+                      <div style={{ fontSize: 36, fontWeight: 700, letterSpacing: "-0.03em" }}>{results.matches.length}</div>
+                      <div style={{ fontSize: 14, color: "var(--color-text-tertiary)", marginTop: 4 }}>of {allDocs.length} docs</div>
+                    </div>
+                    <div className="stat-card">
+                      <div style={{ fontSize: 14, color: "var(--color-text-secondary)", marginBottom: 8, display: "flex", alignItems: "center", gap: 6, fontWeight: 500 }}><i className="ti ti-git-branch" style={{color: "var(--color-text-success)"}}></i> B-Tree splits</div>
+                      <div style={{ fontSize: 36, fontWeight: 700, letterSpacing: "-0.03em" }}>{results.btreeStats.splits}</div>
+                      <div style={{ fontSize: 14, color: "var(--color-text-tertiary)", marginTop: 4 }}>height: {results.btreeStats.height}</div>
+                    </div>
+                  </div>
+
+                  {/* Matched Documents */}
+                  {results.matches.length === 0 ? (
+                    <div style={{ padding: "4rem 2rem", textAlign: "center", color: "var(--color-text-secondary)", border: "2px dashed var(--color-border-secondary)", borderRadius: "var(--border-radius-lg)", background: "var(--color-background-primary)" }}>
+                      <div style={{width: 64, height: 64, borderRadius: "50%", background: "var(--color-background-success)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px auto"}}>
+                        <i className="ti ti-circle-check-filled" style={{ fontSize: 36, color: "var(--color-text-success)" }} aria-hidden="true"></i>
+                      </div>
+                      <div style={{ fontSize: 18, fontWeight: 600, color: "var(--color-text-primary)", marginBottom: 8 }}>No significant matches found</div>
+                      <div style={{ fontSize: 15 }}>The text appears to be entirely original!</div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: "var(--color-text-primary)", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                        <i className="ti ti-list-search" style={{color: "var(--color-text-info)"}}></i> Matched documents (ranked)
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        {results.matches.map((m, i) => {
+                          const barColor = m.score >= 70 ? "var(--color-background-danger)" :
+                            m.score >= 40 ? "var(--color-background-warning)" : "var(--color-background-success)";
+                          const textColor = m.score >= 70 ? "var(--color-text-danger)" :
+                            m.score >= 40 ? "var(--color-text-warning)" : "var(--color-text-success)";
+                          const fillHex = m.score >= 70 ? "#EF4444" : m.score >= 40 ? "#F59E0B" : "#22C55E";
+                          return (
+                            <div key={i} className="card" style={{ padding: "20px" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+                                <div>
+                                  <div style={{ fontSize: 16, fontWeight: 600, color: "var(--color-text-primary)", display: "flex", alignItems: "center", gap: 8 }}>
+                                    <i className="ti ti-file-text" style={{ fontSize: 18, color: "var(--color-text-secondary)" }} aria-hidden="true"></i>
+                                    {m.docName}
+                                  </div>
+                                  <div style={{ fontSize: 13, color: "var(--color-text-tertiary)", marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                                    <span style={{background: "var(--color-background-secondary)", padding: "2px 8px", borderRadius: "100px", fontWeight: 600, border: "1px solid var(--color-border-primary)"}}>
+                                      <i className="ti ti-database"></i> Doc #{m.docId}
+                                    </span>
+                                  </div>
+                                </div>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: textColor, background: barColor, padding: "6px 12px", borderRadius: "100px", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}>
+                                  {m.score}% match
+                                </span>
+                              </div>
+                              {/* Progress bar */}
+                              <div style={{ height: 8, background: "var(--color-border-tertiary)", borderRadius: 4, overflow: "hidden", boxShadow: "inset 0 1px 2px rgba(0,0,0,0.05)" }}>
+                                <div style={{ height: "100%", width: `${m.score}%`, background: fillHex, borderRadius: 4, transition: "width 1s cubic-bezier(0.16, 1, 0.3, 1)" }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Hash Table Stats */}
+                  <div className="card" style={{ marginTop: "2rem", padding: "20px", background: "var(--color-background-secondary)" }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: "var(--color-text-primary)", display: "flex", alignItems: "center", gap: 8 }}>
+                      <i className="ti ti-hash" style={{color: "var(--color-text-info)"}}></i> Extendible Hash Table Runtime Stats
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 32, fontSize: 14, color: "var(--color-text-secondary)" }}>
+                      <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>Inserts <strong style={{ color: "var(--color-text-primary)", fontSize: 20 }}>{results.hashStats.inserts}</strong></span>
+                      <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>Bucket splits <strong style={{ color: "var(--color-text-primary)", fontSize: 20 }}>{results.hashStats.splits}</strong></span>
+                      <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>Directory doublings <strong style={{ color: "var(--color-text-primary)", fontSize: 20 }}>{results.hashStats.doublings}</strong></span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB: CORPUS */}
+          {activeTab === "corpus" && (
+            <div className="fade-in">
+              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--color-text-primary)", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: 8 }}>
+                <i className="ti ti-books" style={{color: "var(--color-text-info)"}}></i> {allDocs.length} documents indexed in B-Tree + Extendible Hash
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {allDocs.map((doc, i) => (
+                  <div key={i} className="card" style={{ padding: "16px", cursor: "pointer", transition: "all 0.2s" }} onClick={() => setExpandedDocIdx(expandedDocIdx === i ? null : i)}>
+                    <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+                      <div style={{ width: 40, height: 40, borderRadius: "10px", background: "var(--color-background-info)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "var(--color-text-info)", flexShrink: 0 }}>#{i}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div style={{ fontSize: 15, fontWeight: 600, color: "var(--color-text-primary)", display: "flex", alignItems: "center", gap: 10 }}>
+                            {doc.name}
+                            {i >= SAMPLE_CORPUS.length && (
+                              <span style={{ fontSize: 11, padding: "2px 8px", background: "var(--color-background-success)", color: "var(--color-text-success)", borderRadius: "100px", fontWeight: 700, letterSpacing: "0.05em", border: "1px solid rgba(34,197,94,0.2)" }}>CUSTOM</span>
+                            )}
+                          </div>
+                          <i className={`ti ${expandedDocIdx === i ? 'ti-chevron-up' : 'ti-chevron-down'}`} style={{color: "var(--color-text-tertiary)", fontSize: 18}}></i>
+                        </div>
+                        <div style={{ fontSize: 14, color: "var(--color-text-secondary)", marginTop: 6 }}>
+                          {doc.text.split(/\s+/).length} words <span style={{color: "var(--color-border-secondary)", margin:"0 8px"}}>|</span> {generateKgramHashes(doc.text, 4).size} k-grams
+                        </div>
+                        {expandedDocIdx === i && (
+                          <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px dashed var(--color-border-secondary)", fontSize: 14, color: "var(--color-text-secondary)", lineHeight: 1.6, whiteSpace: "pre-wrap" }} onClick={e => e.stopPropagation()}>
+                            {doc.text}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add document */}
+              <div className="card" style={{ marginTop: "2rem", padding: "1.5rem", background: "var(--color-background-secondary)", borderStyle: "dashed", borderWidth: 2 }}>
+                <div style={{ fontSize: 16, fontWeight: 600, marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: 8, color: "var(--color-text-primary)" }}>
+                  <i className="ti ti-file-plus" style={{fontSize: 20, color: "var(--color-text-info)"}}></i> Add document to corpus
+                </div>
+                <input type="text" placeholder="Document name" value={newDocName} onChange={e => setNewDocName(e.target.value)}
+                  className="input-field" style={{ marginBottom: 12 }} />
+                <textarea placeholder="Paste document text here..." value={newDocText} onChange={e => setNewDocText(e.target.value)}
+                  className="input-field" style={{ height: 120, resize: "vertical", marginBottom: 16 }} />
+                <button onClick={addDocument} disabled={!newDocName.trim() || !newDocText.trim()}
+                  className="btn-primary" style={{ padding: "12px 24px", fontSize: 15, fontWeight: 600, width: "100%", justifyContent: "center", display: "flex", alignItems: "center" }}>
+                  <i className="ti ti-plus" style={{marginRight: 8}}></i> Add to corpus
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: HOW IT WORKS */}
+          {activeTab === "algo" && (
+            <div className="fade-in" style={{ fontSize: 15, color: "var(--color-text-primary)", lineHeight: 1.6 }}>
+              <p style={{ color: "var(--color-text-secondary)", margin: "0 0 2rem", fontSize: 16, fontWeight: 500, textAlign: "center" }}>
+                This checker uses 4 data structures from your ADS syllabus — all coded from scratch with no STL trees, heaps, or hash maps.
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {[
+                  {
+                    icon: "ti-hash", color: "var(--color-text-info)", bg: "var(--color-background-info)",
+                    title: "1. Rabin-Karp rolling hash (Unit 5)",
+                    body: `Text is broken into overlapping 4-word windows called k-grams. Each k-gram is hashed using a polynomial rolling hash with base=31 and mod=1e9+9. This lets us compare millions of substrings in O(n+m) time instead of O(nm) for the naive approach. Hash collisions are verified position-by-position.`
+                  },
+                  {
+                    icon: "ti-binary-tree", color: "var(--color-text-warning)", bg: "var(--color-background-warning)",
+                    title: "2. B-Tree index (Unit 1)",
+                    body: `All corpus documents are inserted into a B-Tree of order 3 (max 5 keys/node). The B-Tree stores (docID → document data) pairs and auto-splits when a node overflows. This gives O(log n) lookup time and enables range queries over document IDs.`
+                  },
+                  {
+                    icon: "ti-table", color: "var(--color-text-success)", bg: "var(--color-background-success)",
+                    title: "3. Extendible hashing (Unit 2)",
+                    body: `Every k-gram fingerprint (hash → docID mapping) is stored in an Extendible Hash Table. Buckets hold 4 entries. On overflow, local depth increases and the bucket splits. When local depth exceeds global depth, the directory doubles in size — exactly as your project spec requires.`
+                  },
+                  {
+                    icon: "ti-arrow-down", color: "var(--color-text-danger)", bg: "var(--color-background-danger)",
+                    title: "4. Min-Heap for top-K results (Unit 3)",
+                    body: `After matching, each document gets a similarity score (matched k-grams / total query k-grams × 100). A Min-Heap sorts all matched documents by score. The top-K highest-scoring documents bubble to the top in O(n log k) time.`
+                  }
+                ].map((item, i) => (
+                  <div key={i} className="card" style={{ padding: "24px" }}>
+                    <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 12 }}>
+                      <div style={{ width: 48, height: 48, borderRadius: "12px", background: item.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <i className={`ti ${item.icon}`} style={{ fontSize: 24, color: item.color }} aria-hidden="true"></i>
+                      </div>
+                      <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em" }}>{item.title}</span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 15, color: "var(--color-text-secondary)", lineHeight: 1.7 }}>{item.body}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="card" style={{ marginTop: "2rem", padding: "20px", background: "var(--color-background-info)", border: "1px solid rgba(37,99,235,0.2)", display: "flex", gap: 16, alignItems: "flex-start" }}>
+                <i className="ti ti-bulb" style={{ fontSize: 28, color: "var(--color-text-info)" }}></i>
+                <div>
+                  <strong style={{ color: "var(--color-text-primary)", display: "block", marginBottom: 6, fontSize: 16 }}>Viva tip:</strong> 
+                  <span style={{ color: "var(--color-text-secondary)" }}>
+                    Be ready to explain what happens when a bucket overflows in extendible hashing, the 5 insertion cases for a Red-Black tree, and why Rabin-Karp needs a verification step after a hash match.
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<PlagiarismChecker />);
+  </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+Dear Hiring Team at Seventh Ray Consulting and Technology,
+
+I'm a first-year B.Tech CSE (AI & ML) student at DBS Global University (HCL Tech collaboration), and I'm applying for the Full Stack Developer Internship. I don't have formal work experience in development yet — but I've spent the past year building real projects, shipping them live, and learning by doing.
+
+The project I'm most proud of from a full stack perspective is my Smart AI Study Planner — a complete web application built with Python, Streamlit, SQLite, and the Google Gemini API. It handles multi-user authentication with bcrypt, runs an ML model trained on study logs to predict performance trends, generates automated timetables, and visualises everything through Plotly dashboards. It's live on Streamlit Cloud and fully functional. Alongside that, I built an Advanced Plagiarism Detection Engine in React and JavaScript — entirely client-side, with four data structures (Rabin-Karp, B-Tree, Extendible Hash Table, Min-Heap) implemented from scratch and deployed on Vercel.
+
+I also co-built Saheli — a Flask and SQLite platform connecting homebound women with micro-tasks and UPI-based payouts — as part of a team of four for the CII Yi Yuva Hackathon 2026, where we achieved Grand Finalist standing and drew investor interest from the judging panel.
+
+I'm currently deepening my foundations in Python, JavaScript, and C through daily practice. I pick things up fast, I'm comfortable working across the stack, and I'm genuinely excited about the kind of work Seventh Ray does.
+
+I'd welcome the opportunity to contribute and keep learning as part of your team.
+
+Warm regards,
+Sankalp Jaiswal
+sankalpjaiswal013@gmail.com |
+LinkedIn: linkedin.com/in/sankalp137
